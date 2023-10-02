@@ -9,7 +9,6 @@ resource "azurerm_service_plan" "myapp" {
   location            = azurerm_resource_group.myrg.location
   os_type             = "Windows"
   sku_name            = "B1"
-  depends_on = [ azurerm_resource_group.myrg ]
 }
 
 resource "azurerm_windows_web_app" "mywebapp1428" {
@@ -18,6 +17,7 @@ resource "azurerm_windows_web_app" "mywebapp1428" {
   location            = azurerm_resource_group.myrg.location
   service_plan_id     = azurerm_service_plan.myapp.id
 
+#Connecting Web App with SQL Server
     connection_string {
       name = "SQLConnection"
       type = "SQLAzure"
@@ -31,6 +31,7 @@ resource "azurerm_windows_web_app" "mywebapp1428" {
     }
   }
 
+#Monitoring of Web App
   logs {
     detailed_error_messages = true
     #Enabling Web Server Logging
@@ -42,9 +43,10 @@ resource "azurerm_windows_web_app" "mywebapp1428" {
     }
   }
 
-  depends_on = [ azurerm_service_plan.myapp, azurerm_mssql_server.webappdbserver200x23, azurerm_mssql_database.webappdb200x23 ]
+  depends_on = [ azurerm_service_plan.myapp, azurerm_mssql_server.webappdbserver200x23, azurerm_mssql_database.webappdb200x23, azurerm_storage_account.mystore200x23 ]
 }
 
+#GitHub Integration
 resource "azurerm_app_service_source_control" "gitcontrol" {
   app_id   = azurerm_windows_web_app.mywebapp1428.id
   repo_url = "https://github.com/gsowjanya97/challenge1"
@@ -52,6 +54,7 @@ resource "azurerm_app_service_source_control" "gitcontrol" {
   use_manual_integration = true
 }
 
+#Storage for Web App monitoring logs
 resource "azurerm_storage_account" "mystore200x23" {
   name                     = "mystore200x23"
   resource_group_name      = azurerm_resource_group.myrg.name
@@ -88,6 +91,7 @@ data "azurerm_storage_account_blob_container_sas" "mystoresas" {
   depends_on = [ azurerm_storage_account.mystore200x23]
 }
 
+#Authentication of Web App to Storage Account via Shared Access Secret
 output "sas_value" {
   value=nonsensitive("https://${azurerm_storage_account.mystore200x23.name}.blob.core.windows.net/${azurerm_storage_container.logs.name}${data.azurerm_storage_account_blob_container_sas.mystoresas.sas}")
 }
